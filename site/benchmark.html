@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SIGNAL ZERO stress benchmark: advance a large deterministic station for a chosen number of ticks and report execution time, ticks executed and a deterministic final-state checksum.">
+<title>SIGNAL ZERO :: Benchmark</title>
+<link rel="stylesheet" href="styles/phosphor.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1 class="logo">SIGNAL&nbsp;ZERO<span class="sub"> // stress bench</span></h1>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html">Console</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="tests/index.html">Tests</a>
+      <a href="benchmark.html" class="active">Benchmark</a>
+    </nav>
+    <div class="owner">operator: sourov</div>
+  </header>
+
+  <main class="content">
+    <section class="panel">
+      <h2>Headless Stress Benchmark</h2>
+      <p class="muted">Generates a large deterministic station and advances it for the requested
+      number of ticks, then reports execution time, ticks executed and a deterministic
+      final-state checksum. Identical seed + ticks always yield the identical checksum.
+      Equivalent CLI: <code>node tests/benchmark.mjs [ticks] [seed]</code>.</p>
+      <div class="grid cols-4">
+        <div><label for="in-ticks">Ticks (6000 = 10 min)</label><input id="in-ticks" type="number" value="6000" min="1"></div>
+        <div><label for="in-seed">Seed</label><input id="in-seed" type="number" value="20240501"></div>
+        <div><label for="in-mods">Modules</label><input id="in-mods" type="number" value="100" min="2"></div>
+        <div><label for="in-conns">Connections</label><input id="in-conns" type="number" value="250" min="1"></div>
+      </div>
+      <div class="controls" style="margin-top:12px">
+        <button class="btn" id="btn-run">Run Benchmark</button>
+        <span id="status" class="muted">idle</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Result</h2>
+      <div class="mono-block" id="out">No run yet.</div>
+    </section>
+  </main>
+
+  <footer class="footer">SIGNAL ZERO &mdash; stress bench &middot; operator: sourov</footer>
+</div>
+
+<script type="module">
+  import { runBenchmark } from './umbra/engine/benchmark.mjs';
+
+  const out = document.getElementById('out');
+  const status = document.getElementById('status');
+  document.getElementById('btn-run').addEventListener('click', () => {
+    status.textContent = 'running (may block briefly)...';
+    out.textContent = '';
+    setTimeout(() => {
+      const ticks = parseInt(document.getElementById('in-ticks').value, 10) || 6000;
+      const seed = parseInt(document.getElementById('in-seed').value, 10) || 0;
+      const modules = parseInt(document.getElementById('in-mods').value, 10) || 100;
+      const connections = parseInt(document.getElementById('in-conns').value, 10) || 250;
+      const r = runBenchmark({ ticks, seed, modules, connections, failures: 50 });
+      out.textContent = [
+        'SIGNAL ZERO :: BENCHMARK',
+        '  seed                : ' + r.seed,
+        '  modules             : ' + r.moduleCount,
+        '  connections         : ' + r.connectionCount,
+        '  failures            : ' + r.failureCount,
+        '  drones              : ' + r.droneCount,
+        '  simulation ticks    : ' + r.ticksExecuted + ' (' + (r.ticksExecuted / 10) + ' sim seconds)',
+        '  execution time (ms) : ' + r.executionMs,
+        '  final checksum      : ' + r.checksumHex + ' (' + r.checksum + ')',
+        '  power delivered     : ' + r.lastPower.delivered + ' / ' + r.lastPower.totalDemand,
+      ].join('\n');
+      status.textContent = 'done';
+      status.className = 'badge ok';
+    }, 30);
+  });
+</script>
+</body>
+</html>

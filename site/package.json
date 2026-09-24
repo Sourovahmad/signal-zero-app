@@ -1,0 +1,20 @@
+{
+  "name": "signal-zero",
+  "version": "1.0.0",
+  "description": "SIGNAL ZERO - deterministic space-station emergency simulator (full live station + canonical serializer powering save/load, black-box replay and benchmark checksum; headless CLI + test suite pass without any GUI).",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/run.mjs",
+    "benchmark": "node umbra/cli.mjs benchmark",
+    "seven": "node umbra/cli.mjs seven",
+    "replay": "node umbra/cli.mjs replay",
+    "cli": "node umbra/cli.mjs"
+  },
+  "author": "sourov",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^30.0.0"
+  }
+}

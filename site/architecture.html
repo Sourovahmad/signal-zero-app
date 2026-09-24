@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SIGNAL ZERO architecture: a layered, UI-free deterministic simulation engine (RNG, models, graph, power solver, oxygen, thermal, failures, A* drones, command sourcing, fixed-tick clock, canonical serializer, save/load and black-box replay) with an honest requirement status table.">
+<title>SIGNAL ZERO :: Architecture</title>
+<link rel="stylesheet" href="styles/phosphor.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1 class="logo">SIGNAL&nbsp;ZERO<span class="sub"> // architecture</span></h1>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html">Console</a>
+      <a href="architecture.html" class="active">Architecture</a>
+      <a href="tests/index.html">Tests</a>
+      <a href="benchmark.html">Benchmark</a>
+    </nav>
+    <div class="owner">operator: sourov</div>
+  </header>
+
+  <main class="content">
+    <section class="panel">
+      <h2>Layered Architecture</h2>
+      <p>The simulation engine has <strong>zero UI dependency</strong> and is fully testable
+      headless. The UI only reads immutable snapshots and submits timestamped commands. One
+      canonical serializer powers save/load, the black-box replay recorder and the benchmark
+      checksum.</p>
+      <div class="mono-block">umbra/engine/            deterministic simulation spine (no UI imports)
+  rng.mjs                single seeded RNG (getState/setState = only randomness)
+  models.mjs             Module, Connection, Drone, Task, TaskQueue, Failure
+  graph.mjs              StationGraph + Dijkstra shortest path / rerouting
+  power.mjs              capacity-constrained priority power-flow solver
+  oxygen.mjs             per-module O2 storage, diffusion, leaks, crew health
+  thermal.mjs            reactor heat balance, droop, shutdown, damage
+  failures.mjs           seeded failure generation + consequential effects
+  drones.mjs             A* drone motion, task execution, mid-transit re-plan
+  commands.mjs           timestamped Command model + CommandLog (command sourcing)
+  clock.mjs              fixed 100ms tick + accumulator (speed = N whole ticks)
+  engine.mjs             SimState, Engine (create/fromSnapshot/step/snapshot)
+  persistence.mjs        CANONICAL serializer: sorted-key JSON + SHA-256 + save/load
+  replay.mjs             black-box recorder + deterministic replay driver
+  fixtures.mjs           deterministic scenario configs (incl. "Seven Minutes")
+  benchmark.mjs          large-station stress generator + runner
+  index.mjs              headless package barrel
+
+umbra/cli.mjs            headless CLI (benchmark / seven / replay self-test)
+app/console.mjs          Mission Console renderer entry point (snapshots + commands
+                         + save/load/replay); boot() degrades to a readable panel
+                         on any launch failure instead of a blank window
+electron/main.js         Electron shell (offline file:// launch entry point)
+styles/                  Phosphor CRT canonical style foundation
+tests/                   harness + suite + node runners</div>
+    </section>
+
+    <section class="panel">
+      <h2>Launch &amp; render loop</h2>
+      <ul>
+        <li><code>electron/main.js</code> is the desktop launch entry point: it opens
+        <code>index.html</code> from local files (<code>file://</code>) with no network access and a
+        1024&nbsp;px minimum window width.</li>
+        <li>A small <strong>classic (non-module) boot guard</strong> in <code>index.html</code> loads
+        first and installs error/rejection/timeout handlers. If the ES-module console never signals a
+        successful boot &mdash; an ES-module-incapable runtime, a failed module fetch, or an init
+        error &mdash; it reveals a <strong>readable fallback panel</strong> rather than leaving a
+        blank/"crashed" window. This is the offline-Electron equivalent of the brief's "degrade to a
+        readable error message if the UI toolkit is unavailable" requirement.</li>
+        <li>The render loop uses <code>requestAnimationFrame</code> purely to <em>read</em>
+        snapshots; the engine advances on its own <code>SimClock</code> accumulator, so frame rate
+        never affects simulation results.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Per-tick ordering (deterministic)</h2>
+      <ol>
+        <li>apply commands scheduled at this tick (insertion order)</li>
+        <li>fire scenario events scheduled at this tick</li>
+        <li>solve the power network (priority + capacity)</li>
+        <li>apply continuous failure consequences (+ seeded spawns)</li>
+        <li>oxygen: generate / consume / leak / diffuse / crew health</li>
+        <li>thermal: reactor heat balance / droop / shutdown / damage</li>
+        <li>drones: physical travel + task execution + re-planning</li>
+        <li>evaluate end conditions, then increment the tick counter</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Determinism &amp; Persistence Model</h2>
+      <ul>
+        <li>All simulation-affecting quantities are <strong>integers</strong> or fixed-point
+        scaled integers (oxygen 0..capacity, temperature &times;10, drone progress &times;1000).
+        No floats enter the sim state.</li>
+        <li>The engine advances only in whole <strong>100&nbsp;ms integer ticks</strong>.</li>
+        <li>The <strong>accumulator loop</strong> converts real elapsed time &times; speed into a
+        whole number of ticks &mdash; 60&nbsp;s at 1x and 8x reach identical state.</li>
+        <li>Randomness comes from <strong>one</strong> seeded RNG; failures are generated only
+        from it, so seed + command list fully determine every future state.</li>
+        <li>The <strong>canonical serializer</strong> emits sorted-key, order-independent JSON of
+        the entire snapshot (modules, connections, drones, task queues, active repairs, failures,
+        sim-time, RNG getState and event log) plus the command history, sealed with a
+        <strong>SHA-256</strong> integrity digest. Load recomputes the digest and validates the
+        schema/version, rejecting corrupt or incompatible data as a typed error &mdash; never a
+        crash.</li>
+        <li><code>Engine.fromSnapshot()</code> restores that state verbatim (RNG position,
+        scenario-event flags, tick, event log), so continuing a loaded save is indistinguishable
+        from never having closed the app.</li>
+        <li>The <strong>black box</strong> stores the seed, initial config and every timestamped
+        command; the replay driver re-runs the engine to the identical final checksum.</li>
+        <li>A stable FNV-1a <strong>checksum</strong> over the sorted snapshot yields identical
+        values for identical runs (used by tests, replay verification and the benchmark).</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Requirement Status (honest)</h2>
+      <p class="muted">The full station is a live interconnected system, and the canonical
+      serializer now powers save/load, the black-box replay recorder and the benchmark checksum.
+      No requirement below is marked done unless it is exercised by the automated tests and/or the
+      live console.</p>
+      <table>
+        <thead><tr><th>Requirement</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Deterministic 100ms tick + accumulator</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Single seeded RNG + getState/setState</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Command sourcing (apply at tick boundary)</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Integer / fixed-point state (no floats)</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Capacity-constrained power priority solver</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Station graph + shortest path + rerouting</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Oxygen storage / diffusion / leaks / crew health</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Cooling / reactor heat / droop / shutdown / damage</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Seeded failure system with real consequences</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>A* drones: travel / tasks / re-plan / graceful fail</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Drone task queue: add / remove / reorder</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Interactive station map + module panel + drones</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Dashboard (8 readouts) + event log (sim time)</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>"Seven Minutes" scenario + timed events + end states</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Time control (pause/1x/2x/4x/8x)</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Graceful launch fallback (readable error, not a crash)</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Canonical serializer (sorted-key JSON + SHA-256)</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Save / load full state (+ corrupted-save handling)</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Black-box replay recorder (deterministic re-run)</td><td><span class="badge ok">DONE</span></td></tr>
+          <tr><td>Headless CLI + benchmark + deterministic checksum</td><td><span class="badge ok">DONE</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer class="footer">SIGNAL ZERO &mdash; architecture &middot; operator: sourov</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "name": "build-a-complete-desktop-application-called-sign",
+  "productName": "Build A Complete Desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build A Complete Desktop as a desktop application.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.wondercall.buildacompletedesktopapplicationcalledsign",
+    "productName": "Build A Complete Desktop",
+    "files": [
+      "main.js",
+      "site/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "identity": null
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

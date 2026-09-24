@@ -1,0 +1,178 @@
+/* SIGNAL ZERO - Phosphor CRT canonical style foundation (spec §9) */
+:root{
+  --bg:#05100a;--panel:#0a1a0f;--field:#03130a;--ink:#4dff88;--muted:#3bbf6a;
+  --line:#1c5c34;--brand:#33cc66;--brand-ink:#05100a;--link:#7dffb0;
+  --warn:#ffcc33;--danger:#ff5555;--r-s:2px;--r-m:2px;
+  --sp-1:6px;--sp-2:12px;--sp-3:20px;
+  --fs-0:12px;--fs-1:14px;--fs-2:18px;--fs-3:24px;
+  --mono:ui-monospace,'Cascadia Mono',Menlo,Consolas,monospace;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  min-width:1024px;
+  background-color:var(--bg);
+  background-image:repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.28) 3px,
+    rgba(0,0,0,0) 4px
+  );
+  color:var(--ink);
+  font-family:var(--mono);
+  font-size:var(--fs-1);
+  line-height:1.5;
+}
+
+a{color:var(--link);text-decoration:none}
+a:hover,a:focus{text-decoration:underline}
+
+h1,h2,h3{font-weight:600;letter-spacing:0.04em;margin:0 0 var(--sp-2)}
+h1{font-size:var(--fs-3);text-shadow:0 0 8px rgba(77,255,136,0.35)}
+h2{font-size:var(--fs-2)}
+h3{font-size:var(--fs-1)}
+
+p{margin:0 0 var(--sp-2)}
+code,pre{font-family:var(--mono)}
+
+.muted{color:var(--muted)}
+.warn{color:var(--warn)}
+.danger{color:var(--danger)}
+
+.app{display:flex;flex-direction:column;min-height:100vh}
+
+/* Top command bar / navigation */
+.topbar{
+  display:flex;align-items:center;gap:var(--sp-3);
+  padding:var(--sp-2) var(--sp-3);
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+}
+.topbar .logo{
+  margin:0;
+  font-size:var(--fs-2);letter-spacing:0.2em;font-weight:600;
+  color:var(--ink);text-shadow:0 0 8px rgba(77,255,136,0.5);
+  white-space:nowrap;
+}
+.topbar .logo .sub{color:var(--muted);font-size:var(--fs-0);letter-spacing:0.1em;font-weight:400}
+.nav{display:flex;gap:var(--sp-2);flex-wrap:wrap}
+.nav a{
+  padding:var(--sp-1) var(--sp-2);
+  border:1px solid var(--line);border-radius:var(--r-s);
+  color:var(--link);
+}
+.nav a.active{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+
+.owner{margin-left:auto;color:var(--muted);font-size:var(--fs-0)}
+
+.content{flex:1;padding:var(--sp-3);width:100%;max-width:1400px;margin:0 auto}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--r-m);
+  padding:var(--sp-3);
+  margin-bottom:var(--sp-3);
+}
+.panel > h2{border-bottom:1px solid var(--line);padding-bottom:var(--sp-1)}
+
+.grid{display:grid;gap:var(--sp-3)}
+.grid.cols-2{grid-template-columns:repeat(2,1fr)}
+.grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.grid.cols-4{grid-template-columns:repeat(4,1fr)}
+
+/* Dashboard stat cell */
+.stat{
+  background:var(--field);
+  border:1px solid var(--line);
+  border-radius:var(--r-s);
+  padding:var(--sp-2);
+}
+.stat .label{color:var(--muted);font-size:var(--fs-0);text-transform:uppercase;letter-spacing:0.08em}
+.stat .value{color:var(--ink);font-size:var(--fs-3);text-shadow:0 0 6px rgba(77,255,136,0.3)}
+.stat.is-warn .value{color:var(--warn)}
+.stat.is-danger .value{color:var(--danger)}
+
+/* Buttons */
+.btn{
+  font-family:var(--mono);font-size:var(--fs-1);
+  padding:var(--sp-1) var(--sp-2);
+  background:var(--brand);color:var(--brand-ink);
+  border:1px solid var(--brand);border-radius:var(--r-s);
+  cursor:pointer;
+}
+.btn:hover,.btn:focus{outline:1px solid var(--link)}
+.btn.ghost{background:transparent;color:var(--link);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--link)}
+
+/* Fields */
+label{display:block;color:var(--muted);font-size:var(--fs-0);margin-bottom:var(--sp-1)}
+input,select,textarea{
+  font-family:var(--mono);font-size:var(--fs-1);
+  background:var(--field);color:var(--ink);
+  border:1px solid var(--line);border-radius:var(--r-s);
+  padding:var(--sp-1) var(--sp-2);width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:1px solid var(--link)}
+
+/* Tables / logs */
+table{width:100%;border-collapse:collapse;font-size:var(--fs-0)}
+th,td{text-align:left;padding:var(--sp-1) var(--sp-2);border-bottom:1px solid var(--line)}
+th{color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+
+.log{
+  background:var(--field);border:1px solid var(--line);border-radius:var(--r-s);
+  padding:var(--sp-2);max-height:320px;overflow:auto;
+  font-size:var(--fs-0);
+}
+.log .t{color:var(--muted)}
+.log .line.warn{color:var(--warn)}
+.log .line.danger{color:var(--danger)}
+
+.footer{
+  padding:var(--sp-2) var(--sp-3);
+  border-top:1px solid var(--line);
+  color:var(--muted);font-size:var(--fs-0);
+  background:var(--panel);
+}
+
+.badge{
+  display:inline-block;padding:0 var(--sp-1);
+  border:1px solid var(--line);border-radius:var(--r-s);
+  font-size:var(--fs-0);color:var(--muted);
+}
+.badge.ok{color:var(--brand);border-color:var(--brand)}
+.badge.warn{color:var(--warn);border-color:var(--warn)}
+.badge.danger{color:var(--danger);border-color:var(--danger)}
+
+.mono-block{
+  background:var(--field);border:1px solid var(--line);border-radius:var(--r-s);
+  padding:var(--sp-2);overflow:auto;color:var(--ink);font-size:var(--fs-0);
+  white-space:pre;
+}
+
+/* Graceful launch-failure fallback overlay (readable, never a blank window) */
+.boot-error{
+  position:fixed;inset:0;z-index:1000;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:var(--sp-2);padding:var(--sp-3);
+  background:var(--bg);text-align:center;
+}
+.boot-error[hidden]{display:none}
+.boot-error h2{color:var(--danger);text-shadow:0 0 8px rgba(255,85,85,0.4)}
+.boot-error p{color:var(--ink);max-width:680px}
+.boot-error code{color:var(--link)}
+.boot-error pre{
+  background:var(--panel);border:1px solid var(--danger);border-radius:var(--r-s);
+  color:var(--danger);padding:var(--sp-2);max-width:680px;
+  white-space:pre-wrap;overflow:auto;font-size:var(--fs-0);
+}
+.boot-error pre[hidden]{display:none}
+
+@media (max-width:1200px){
+  .grid.cols-4{grid-template-columns:repeat(2,1fr)}
+  .grid.cols-3{grid-template-columns:repeat(2,1fr)}
+}

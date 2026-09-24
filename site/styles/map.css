@@ -1,0 +1,64 @@
+/* SIGNAL ZERO - station map (SVG) + console widgets, Phosphor CRT */
+.map-wrap{
+  position:relative;
+  background:var(--field);
+  border:1px solid var(--line);
+  border-radius:var(--r-m);
+  padding:var(--sp-2);
+  min-height:420px;
+}
+#map{width:100%;height:auto;display:block}
+
+.edge{stroke:var(--line);stroke-width:2}
+.edge.broken{stroke:var(--danger);stroke-dasharray:5 5;opacity:0.85}
+.edge.leaking{stroke:var(--warn);stroke-dasharray:6 4;opacity:0.85}
+.edge.jammed{stroke:var(--warn);stroke-dasharray:2 4;opacity:0.7}
+
+.node circle{fill:var(--panel);stroke:var(--line);stroke-width:2}
+.node .nlabel{fill:var(--muted);font-family:var(--mono);font-size:11px;text-anchor:middle}
+.node{cursor:pointer;outline:none}
+
+.node.powered circle{stroke:var(--brand);fill:#0d2417;filter:drop-shadow(0 0 4px rgba(51,204,102,0.6))}
+.node.powered .nlabel{fill:var(--ink)}
+.node.unpowered circle{stroke:var(--line);fill:#0a140d;opacity:0.85}
+.node.o2danger circle{stroke:var(--warn)}
+.node.o2danger .nlabel{fill:var(--warn)}
+.node.fire circle{stroke:var(--danger);fill:#2a0d0d;filter:drop-shadow(0 0 6px rgba(255,85,85,0.8))}
+.node.damaged circle{stroke-dasharray:4 3}
+.node.selected circle{stroke:var(--link);stroke-width:3;filter:drop-shadow(0 0 6px rgba(125,255,176,0.8))}
+.node:focus circle{stroke:var(--link)}
+
+/* Drone markers */
+.drone circle{fill:var(--link);stroke:var(--bg);stroke-width:1.5;filter:drop-shadow(0 0 4px rgba(125,255,176,0.8))}
+.drone .dlabel{fill:var(--link);font-family:var(--mono);font-size:10px;text-anchor:middle}
+.drone.busy circle{fill:var(--warn)}
+.drone.busy .dlabel{fill:var(--warn)}
+
+.legend{display:flex;gap:var(--sp-3);flex-wrap:wrap;margin-top:var(--sp-2);font-size:var(--fs-0)}
+.legend .item{display:flex;align-items:center;gap:var(--sp-1);color:var(--muted)}
+.legend .swatch{width:12px;height:12px;border-radius:50%;border:2px solid var(--line);display:inline-block}
+.legend .swatch.pw{border-color:var(--brand)}
+.legend .swatch.o2{border-color:var(--warn)}
+.legend .swatch.fi{border-color:var(--danger)}
+.legend .swatch.dr{border-color:var(--link);background:var(--link)}
+
+.controls{display:flex;gap:var(--sp-1);flex-wrap:wrap;align-items:center}
+.controls .sep{color:var(--muted);margin:0 var(--sp-1)}
+.controls .btn.active{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+
+/* Outcome banner */
+.banner{margin:0 0 var(--sp-3);padding:0;text-align:center;font-size:var(--fs-2);letter-spacing:0.08em}
+.banner:empty{display:none}
+.banner.ok{color:var(--brand);border:1px solid var(--brand);padding:var(--sp-2);border-radius:var(--r-s);text-shadow:0 0 8px rgba(51,204,102,0.5)}
+.banner.warn{color:var(--warn);border:1px solid var(--warn);padding:var(--sp-2);border-radius:var(--r-s)}
+.banner.danger{color:var(--danger);border:1px solid var(--danger);padding:var(--sp-2);border-radius:var(--r-s);text-shadow:0 0 8px rgba(255,85,85,0.5)}
+
+/* Drone cards + task queues */
+.drone-card{border:1px solid var(--line);border-radius:var(--r-s);padding:var(--sp-2);margin-bottom:var(--sp-2);background:var(--field)}
+.drone-head{display:flex;gap:var(--sp-2);align-items:center;margin-bottom:var(--sp-1)}
+.task-list{margin:0;padding-left:var(--sp-3);font-size:var(--fs-0)}
+.task-list li{display:flex;justify-content:space-between;gap:var(--sp-2);align-items:center;padding:2px 0}
+.task-btns{display:flex;gap:4px;flex-shrink:0}
+.btn.mini{padding:0 6px;font-size:var(--fs-0);line-height:1.6}
+.btn.mini:disabled{opacity:0.4;cursor:default}
+tr.danger td{color:var(--danger)}

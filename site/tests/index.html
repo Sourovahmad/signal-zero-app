@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SIGNAL ZERO test bench: run the deterministic engine test suite (determinism, power, oxygen, thermal, failures, A* drones, rerouting, disconnected-graph edge cases) in the renderer or headless.">
+<title>SIGNAL ZERO :: Tests</title>
+<link rel="stylesheet" href="../styles/phosphor.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1 class="logo">SIGNAL&nbsp;ZERO<span class="sub"> // test bench</span></h1>
+    <nav class="nav" aria-label="Primary">
+      <a href="../index.html">Console</a>
+      <a href="../architecture.html">Architecture</a>
+      <a href="index.html" class="active">Tests</a>
+      <a href="../benchmark.html">Benchmark</a>
+    </nav>
+    <div class="owner">operator: sourov</div>
+  </header>
+
+  <main class="content">
+    <section class="panel">
+      <h2>Automated Test Suite</h2>
+      <p class="muted">Runs the engine test suite &mdash; determinism, power priority &amp; capacity,
+      oxygen consumption/leakage/crew-health, thermal cooling cascade &amp; auto-shutdown, seeded
+      simultaneous failures, A* drone travel / rerouting / graceful failure, shortest path and
+      disconnected-graph edge cases &mdash; directly in the renderer. The same suite runs headless
+      via <code>node tests/run.mjs</code>.</p>
+      <div class="controls">
+        <button class="btn" id="btn-run">Run Tests</button>
+        <span id="summary" class="muted">idle</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Results</h2>
+      <div class="mono-block" id="out">Press "Run Tests".</div>
+    </section>
+  </main>
+
+  <footer class="footer">SIGNAL ZERO &mdash; test bench &middot; operator: sourov</footer>
+</div>
+
+<script type="module">
+  import { run, clearRegistry } from './harness.mjs';
+
+  const out = document.getElementById('out');
+  const summary = document.getElementById('summary');
+  const btn = document.getElementById('btn-run');
+
+  btn.addEventListener('click', async () => {
+    out.textContent = '';
+    summary.textContent = 'running...';
+    clearRegistry();
+    await import('./tests.mjs?ts=' + Date.now());
+    const lines = [];
+    const res = await run((line) => {
+      lines.push(line);
+      out.textContent = lines.join('\n');
+    });
+    summary.textContent = `${res.passed}/${res.total} passed, ${res.failed} failed`;
+    summary.className = res.failed === 0 ? 'badge ok' : 'badge danger';
+  });
+</script>
+</body>
+</html>

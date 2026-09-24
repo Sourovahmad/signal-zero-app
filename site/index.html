@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SIGNAL ZERO mission console: a deterministic orbital emergency simulator with a live interconnected station (power, oxygen, thermal, seeded failures, A* repair drones), station map, dashboard, time control, event log, save/load and a black-box replay recorder for the Seven Minutes scenario.">
+<title>SIGNAL ZERO :: Mission Console</title>
+<link rel="stylesheet" href="styles/phosphor.css">
+<link rel="stylesheet" href="styles/map.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1 class="logo">SIGNAL&nbsp;ZERO<span class="sub"> // orbital emergency sim</span></h1>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html" class="active">Console</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="tests/index.html">Tests</a>
+      <a href="benchmark.html">Benchmark</a>
+    </nav>
+    <div class="owner">operator: sourov &middot; paris, france</div>
+  </header>
+
+  <main class="content">
+    <div id="outcome" class="banner" role="status" aria-live="polite"></div>
+
+    <section class="grid cols-4" aria-label="Dashboard">
+      <div class="stat" id="stat-crew"><div class="label">Crew Alive</div><div class="value">-</div></div>
+      <div class="stat" id="stat-temp"><div class="label">Reactor Temp</div><div class="value">-</div></div>
+      <div class="stat" id="stat-power"><div class="label">Available Power</div><div class="value">-</div></div>
+      <div class="stat" id="stat-demand"><div class="label">Total Demand</div><div class="value">-</div></div>
+      <div class="stat" id="stat-oxygen"><div class="label">Avg Oxygen</div><div class="value">-</div></div>
+      <div class="stat" id="stat-failures"><div class="label">Active Failures</div><div class="value">-</div></div>
+      <div class="stat" id="stat-drones"><div class="label">Available Drones</div><div class="value">-</div></div>
+      <div class="stat" id="stat-time"><div class="label">Sim Time</div><div class="value">-</div></div>
+    </section>
+
+    <section class="panel">
+      <h2>Time Control</h2>
+      <div class="controls">
+        <button class="btn ghost" data-speed="0">Pause</button>
+        <button class="btn ghost" data-speed="1">1x</button>
+        <button class="btn ghost" data-speed="2">2x</button>
+        <button class="btn ghost" data-speed="4">4x</button>
+        <button class="btn ghost" data-speed="8">8x</button>
+        <span class="sep">|</span>
+        <button class="btn ghost" id="btn-restart">Restart Scenario</button>
+        <span class="muted">Changing speed never changes the simulation result &mdash; it only runs more whole 100&nbsp;ms ticks per frame.</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Session &mdash; Save / Load / Black&nbsp;Box</h2>
+      <div class="controls">
+        <button class="btn" id="btn-quicksave">Quick Save</button>
+        <button class="btn ghost" id="btn-quickload">Quick Load</button>
+        <span class="sep">|</span>
+        <button class="btn ghost" id="btn-save-file">Save to File</button>
+        <button class="btn ghost" id="btn-load-file">Load from File</button>
+        <span class="sep">|</span>
+        <button class="btn ghost" id="btn-save-replay">Export Black Box</button>
+        <button class="btn ghost" id="btn-load-replay">Load &amp; Replay</button>
+        <span id="sessionStatus" class="muted">Session state persists modules, connections, drones, task queues, active repairs, failures, sim time, the RNG position and the full event history.</span>
+      </div>
+      <p class="muted" style="margin-top:12px">A save is one canonical, sorted-key JSON document sealed with a SHA-256 integrity digest; loading it rejects corrupted or incompatible data gracefully and resumes exactly where you left off. The black box records the seed and every timestamped command, so a run can be replayed deterministically to the identical final state.</p>
+      <input type="file" id="file-load" accept="application/json,.json" hidden>
+      <input type="file" id="file-replay" accept="application/json,.json" hidden>
+    </section>
+
+    <div class="grid cols-2">
+      <section class="panel">
+        <h2>Station Map &mdash; Seven Minutes</h2>
+        <div class="map-wrap">
+          <svg id="map" role="img" aria-label="Station module graph with live drone positions"></svg>
+        </div>
+        <div class="legend">
+          <span class="item"><span class="swatch pw"></span>powered</span>
+          <span class="item"><span class="swatch"></span>unpowered</span>
+          <span class="item"><span class="swatch o2"></span>oxygen danger</span>
+          <span class="item"><span class="swatch fi"></span>fire</span>
+          <span class="item"><span class="swatch dr"></span>drone</span>
+          <span class="item">red dashed = broken &middot; amber dashed = leak/jam</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Module Detail</h2>
+        <div id="modulePanel"><p class="muted">Select a module on the map.</p></div>
+      </section>
+    </div>
+
+    <div class="grid cols-2">
+      <section class="panel">
+        <h2>Repair Drones <span class="muted">(3 &middot; A* routed)</span></h2>
+        <p class="muted">Dispatch buttons queue a command-sourced task to the least-busy drone. Drones physically travel the graph and re-plan around damage.</p>
+        <div id="dronePanel"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Active Failures &amp; Repair</h2>
+        <div id="failurePanel"><p class="muted">No active failures.</p></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Event Log <span class="muted">(simulation time)</span></h2>
+      <div class="log" id="eventLog"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Build Notes</h2>
+      <p class="muted">This 1.0 console runs the full interconnected station live and deterministically:
+      a capacity-constrained power solver, per-module oxygen storage with edge diffusion / leaks and
+      crew-health decay, a stateful reactor thermal loop with efficiency droop, auto-shutdown and
+      permanent damage, seeded consequential failures, and three A* repair drones that physically
+      travel and re-plan. One canonical serializer now powers save/load, the black-box replay recorder
+      and the benchmark checksum &mdash; all headless-testable and offline. See
+      <a href="architecture.html">Architecture</a> for the full requirement status.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    SIGNAL ZERO &mdash; deterministic orbital emergency simulator &middot; offline build &middot; operator: sourov
+  </footer>
+</div>
+
+<!-- Graceful launch fallback: shown only if the ES-module console never
+     signals a successful boot (e.g. an ES-module-incapable runtime, a failed
+     module fetch, or an initialization error). Keeps the desktop app from
+     opening to a blank/"crashed" window. -->
+<div id="bootError" class="boot-error" role="alert" hidden>
+  <h2>SIGNAL ZERO could not start</h2>
+  <p>The mission console failed to initialize. This offline desktop build needs
+  an ES-module-capable runtime &mdash; run it inside the packaged Electron shell
+  with <code>npm start</code>, or open the pages in a modern browser. The engine,
+  tests and benchmark still run headless via <code>node tests/run.mjs</code> and
+  <code>node umbra/cli.mjs benchmark</code>.</p>
+  <pre id="bootErrorDetail" hidden></pre>
+</div>
+
+<!-- Classic (non-module) boot guard. Loads first and always parses, so it can
+     surface a readable message even if the module below never executes. -->
+<script>
+(function () {
+  'use strict';
+  function showBootError(detail) {
+    var el = document.getElementById('bootError');
+    if (!el) return;
+    el.hidden = false;
+    var pre = document.getElementById('bootErrorDetail');
+    if (pre && detail) { pre.hidden = false; pre.textContent = String(detail); }
+  }
+  // Exposed so the module can report an initialization failure explicitly.
+  window.__signalZeroBootError = showBootError;
+  window.__signalZeroBooted = false;
+
+  // Capture-phase listener also catches failed <script>/resource loads.
+  window.addEventListener('error', function (e) {
+    if (window.__signalZeroBooted) return;
+    var msg = (e && e.message) ? e.message
+      : (e && e.target && e.target.src) ? ('failed to load ' + e.target.src)
+      : 'Script error while loading the mission console.';
+    showBootError(msg);
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    if (window.__signalZeroBooted) return;
+    var r = e && e.reason;
+    showBootError(r && r.message ? r.message : String(r || 'Initialization was rejected.'));
+  });
+  // Final safety net: if boot never flips the flag, tell the operator why.
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (!window.__signalZeroBooted) {
+        showBootError('The mission console did not initialize within the expected time.');
+      }
+    }, 4000);
+  });
+})();
+</script>
+<script type="module" src="app/console.mjs"></script>
+</body>
+</html>
